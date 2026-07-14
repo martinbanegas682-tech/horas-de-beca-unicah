@@ -331,12 +331,25 @@ async function bootstrap(session) {
   if (!session?.user || bootstrapping) return;
   bootstrapping = true;
   try {
-    currentUser = session.user;
+    const { data: verifiedData, error: verifiedError } = await supabase.auth.getUser();
+    if (verifiedError || !verifiedData.user) {
+      await supabase.auth.signOut({ scope: "local" });
+      showAuth();
+      setMessage("#loginMessage", "La sesión anterior venció. Ya puedes iniciar sesión o crear una cuenta.");
+      return;
+    }
+    currentUser = verifiedData.user;
     profile = await ensureProfile(currentUser);
     await loadUserData();
     showApp();
     renderAll();
   } catch (error) {
+    if (error.code === "23503") {
+      await supabase.auth.signOut({ scope: "local" });
+      showAuth();
+      setMessage("#loginMessage", "La sesión anterior ya no existe. Crea tu cuenta o inicia sesión nuevamente.");
+      return;
+    }
     showAuth();
     setMessage("#loginMessage", `No se pudo cargar la cuenta: ${error.message}`, true);
   } finally {
