@@ -75,7 +75,7 @@
             <label><span>Período actual</span><select id="registerPeriod"><option>I</option><option selected>II</option><option>III</option></select></label>
             <label><span>Año</span><input id="registerYear" type="number" min="2020" max="2100" required></label>
           </div>
-          <p class="form-note">El correo solo se usará para confirmar tu cuenta y recuperar la contraseña. La meta es de 900 horas.</p>
+          <p class="form-note">El correo solo se usará si necesitas recuperar tu contraseña. La meta es de 900 horas.</p>
           <button class="primary" type="submit">Crear mi cuenta</button>
           <p id="registerMessage" class="message" aria-live="polite"></p>
         </form>
@@ -669,12 +669,14 @@ $("#registerForm").addEventListener("submit", async (event) => {
     const message = /already|registered|database error/i.test(error.message) ? "El correo o el número de cuenta ya está registrado." : error.message;
     return setMessage("#registerMessage", message, true);
   }
-  if (data.session) await bootstrap(data.session);
-  else {
-    event.target.reset();
-    $("#registerYear").value = new Date().getFullYear();
-    setMessage("#registerMessage", "Cuenta creada. Revisa tu correo para confirmarla y luego inicia sesión.");
-  }
+  if (data.session) await supabase.auth.signOut({ scope: "local" });
+  event.target.reset();
+  $("#registerYear").value = new Date().getFullYear();
+  setAuthMode("login");
+  $("#loginAccount").value = accountNumber;
+  $("#loginPassword").value = "";
+  setMessage("#registerMessage", "");
+  setMessage("#loginMessage", "Cuenta creada correctamente. Ya puedes iniciar sesión.");
 });
 
 $("#resetPasswordButton").addEventListener("click", () => {
